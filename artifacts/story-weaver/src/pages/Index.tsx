@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Truck, Shield, Clock, Flame } from "lucide-react";
+import { ArrowRight, Truck, Shield, Clock, Flame, Package } from "lucide-react";
 import { products } from "@/lib/store";
 import ProductCard from "@/components/ProductCard";
+import BundleCarousel from "@/components/BundleCarousel";
 
 const Index = () => {
   const bestDeals = [...products]
@@ -18,14 +19,30 @@ const Index = () => {
 
   return (
     <main className="pt-16">
+      <section className="py-12 px-4 bg-gradient-to-br from-primary/5 to-secondary/5">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8">
+            <span className="promo-badge inline-block mb-3">Хиты заказов</span>
+            <h1 className="text-3xl md:text-4xl font-extrabold text-foreground flex items-center gap-3">
+              <Package className="h-8 w-8 text-primary" />
+              Выгодные комплекты
+            </h1>
+            <p className="text-muted-foreground mt-2 max-w-2xl">
+              Готовые наборы продуктов, которые чаще всего заказывают. По отдельности — дороже, комплектом — выгоднее.
+            </p>
+          </div>
+          <BundleCarousel />
+        </div>
+      </section>
+
       <section className="py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
             <div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-foreground flex items-center gap-3">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-foreground flex items-center gap-3">
                 <Flame className="h-8 w-8 text-secondary" />
                 Максимальная выгода
-              </h1>
+              </h2>
               <p className="text-muted-foreground mt-2">
                 Товары с лучшими скидками — добавляйте в корзину прямо отсюда
               </p>
