@@ -32,7 +32,8 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_DADATA_TOKEN: ${{ secrets.VITE_DADATA_TOKEN }}
-          PORT: 3000 # Это вылечит ошибку "PORT environment variable is required"
+          PORT: 3000
+          BASE_PATH: /  # <--- Добавь вот эту строчку (обычно это просто слэш)
         run: pnpm run build
 
       - name: 🚀 Deploy to Debian 11
