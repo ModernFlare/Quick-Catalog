@@ -14,7 +14,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 📦 Setup pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@v4 # Обновил до v4, она стабильнее
         with:
           version: 10
 
@@ -27,12 +27,12 @@ jobs:
       - name: 🛠️ Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-     - name: 🏗️ Build project
+      - name: 🏗️ Build project
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_DADATA_TOKEN: ${{ secrets.VITE_DADATA_TOKEN }}
-          PORT: 3000  # <--- Добавь вот эту строчку
+          PORT: 3000 # Это вылечит ошибку "PORT environment variable is required"
         run: pnpm run build
 
       - name: 🚀 Deploy to Debian 11
