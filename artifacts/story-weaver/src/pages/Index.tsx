@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Truck, Shield, Clock, Flame, Package } from "lucide-react";
-import { products } from "@/lib/store";
+import { products, categories } from "@/lib/store";
 import ProductCard from "@/components/ProductCard";
 import BundleCarousel from "@/components/BundleCarousel";
 
@@ -63,7 +63,48 @@ const Index = () => {
         </div>
       </section>
 
-      <section className="py-16 px-4 bg-muted/50">
+      <section className="py-12 px-4 bg-muted/40">
+        <div className="max-w-7xl mx-auto">
+          <div className="mb-8 text-center">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">Категории каталога</h2>
+            <p className="text-muted-foreground mt-2">Выберите раздел и переходите к товарам</p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {categories.filter(c => c !== "Все").map((c, i) => {
+              const count = products.filter(p => p.category === c).length;
+              const sample = products.find(p => p.category === c);
+              const emojiMap: Record<string, string> = {
+                "Молочные": "🥛",
+                "Овощи и фрукты": "🥦",
+                "Хлеб": "🥖",
+                "Мясо": "🥩",
+                "Рыба": "🐟",
+                "Бакалея": "🍝",
+                "Напитки": "🧃",
+              };
+              return (
+                <Link
+                  key={c}
+                  to={`/catalog?category=${encodeURIComponent(c)}`}
+                  className="group rounded-2xl bg-card border border-border p-6 text-center shadow-sm hover:shadow-lg hover:border-primary/50 hover:-translate-y-1 transition-all animate-fade-slide-up"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                >
+                  <div className="text-5xl mb-3 group-hover:scale-110 transition-transform">
+                    {emojiMap[c] ?? sample?.image ?? "🛒"}
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-1">{c}</h3>
+                  <p className="text-xs text-muted-foreground">{count} товаров</p>
+                  <span className="inline-flex items-center gap-1 text-xs text-primary font-medium mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    В раздел <ArrowRight className="h-3 w-3" />
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 px-4">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-12">
             Почему выбирают нас

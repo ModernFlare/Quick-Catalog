@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
+import Autoplay from "embla-carousel-autoplay";
 import { ShoppingCart, TrendingUp, Check } from "lucide-react";
 import {
   Carousel,
@@ -149,8 +150,16 @@ const BundleCard = ({ bundle }: { bundle: Bundle }) => {
 };
 
 const BundleCarousel = () => {
+  const autoplay = useRef(
+    Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true }),
+  );
+
   return (
-    <Carousel opts={{ align: "start", loop: true }} className="w-full">
+    <Carousel
+      opts={{ align: "start", loop: true, duration: 40 }}
+      plugins={[autoplay.current]}
+      className="w-full"
+    >
       <CarouselContent className="-ml-4">
         {BUNDLES.map(bundle => (
           <CarouselItem key={bundle.id} className="pl-4 md:basis-1/2 lg:basis-1/3">

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,8 +8,29 @@ import ProductCard from "@/components/ProductCard";
 import { cn } from "@/lib/utils";
 
 const Catalog = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialCategory = searchParams.get("category") ?? "Все";
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("Все");
+  const [category, setCategoryState] = useState(
+    categories.includes(initialCategory) ? initialCategory : "Все",
+  );
+
+  useEffect(() => {
+    const param = searchParams.get("category") ?? "Все";
+    if (categories.includes(param) && param !== category) {
+      setCategoryState(param);
+    }
+  }, [searchParams]);
+
+  const setCategory = (c: string) => {
+    setCategoryState(c);
+    if (c === "Все") {
+      searchParams.delete("category");
+    } else {
+      searchParams.set("category", c);
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
   const [sortBy, setSortBy] = useState<"default" | "price-asc" | "price-desc" | "discount">("default");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 500]);
   const [onlyDiscount, setOnlyDiscount] = useState(false);
