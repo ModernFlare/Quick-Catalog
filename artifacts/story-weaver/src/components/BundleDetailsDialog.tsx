@@ -41,7 +41,9 @@ const BundleDetailsDialog = ({ bundle, open, onOpenChange, onAdd }: BundleDetail
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent
+        className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
         <div className={`relative bg-gradient-to-br ${bundle.gradient} text-white p-6`}>
           <span className="inline-block bg-white/95 text-foreground text-xs font-bold uppercase px-3 py-1.5 rounded-full mb-3">
             {bundle.badge}
