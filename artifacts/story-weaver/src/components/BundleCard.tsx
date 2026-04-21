@@ -1,16 +1,18 @@
 import { useMemo, useState } from "react";
-import { ShoppingCart, Sparkles, Flame, Check, Info } from "lucide-react";
+import { ShoppingCart, Sparkles, Flame, Check, Info, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { products, useCart, type Product } from "@/lib/store";
 import type { Bundle } from "@/lib/bundles";
+import { cn } from "@/lib/utils";
 
 interface Props {
   bundle: Bundle;
   onOpen: () => void;
   onAdd: (bundle: Bundle) => void;
+  variant?: "vivid" | "plain";
 }
 
-const BundleCard = ({ bundle, onOpen, onAdd }: Props) => {
+function useBundleData(bundle: Bundle) {
   const { items: cartItems } = useCart();
   const [justAdded, setJustAdded] = useState(false);
 
@@ -26,6 +28,13 @@ const BundleCard = ({ bundle, onOpen, onAdd }: Props) => {
   const bundlePrice = Math.round(originalTotal * (1 - bundle.discountPercent / 100));
   const savings = originalTotal - bundlePrice;
   const allInCart = items.length > 0 && items.every(p => cartItems.some(ci => ci.product.id === p.id));
+
+  return { items, originalTotal, bundlePrice, savings, allInCart, justAdded, setJustAdded };
+}
+
+const VividBundleCard = ({ bundle, onOpen, onAdd }: Props) => {
+  const { items, originalTotal, bundlePrice, savings, allInCart, justAdded, setJustAdded } =
+    useBundleData(bundle);
 
   const handleAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -105,32 +114,114 @@ const BundleCard = ({ bundle, onOpen, onAdd }: Props) => {
         <Button
           onClick={handleAdd}
           size="lg"
-          className={`w-full font-bold shadow-lg hover:shadow-xl transition-all ${
+          className={cn(
+            "w-full font-bold shadow-lg hover:shadow-xl transition-all",
             justAdded || allInCart
               ? "bg-emerald-500 text-white hover:bg-emerald-500"
-              : "bg-white text-foreground hover:bg-white/90"
-          }`}
+              : "bg-white text-foreground hover:bg-white/90",
+          )}
         >
           {justAdded ? (
-            <>
-              <Check className="h-5 w-5 mr-2" />
-              Добавлено!
-            </>
+            <><Check className="h-5 w-5 mr-2" />Добавлено!</>
           ) : allInCart ? (
-            <>
-              <Check className="h-5 w-5 mr-2" />
-              Уже в корзине
-            </>
+            <><Check className="h-5 w-5 mr-2" />Уже в корзине</>
           ) : (
-            <>
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              В корзину комплектом
-            </>
+            <><ShoppingCart className="h-5 w-5 mr-2" />В корзину комплектом</>
           )}
         </Button>
       </div>
     </div>
   );
 };
+
+const PlainBundleCard = ({ bundle, onOpen, onAdd }: Props) => {
+  const { items, originalTotal, bundlePrice, savings, allInCart, justAdded, setJustAdded } =
+    useBundleData(bundle);
+
+  const handleAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAdd(bundle);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 2000);
+  };
+
+  return (
+    <div
+      onClick={onOpen}
+      className={cn(
+        "group product-card rounded-2xl border bg-card p-4 shadow-sm hover:shadow-lg transition-all duration-300 relative overflow-hidden cursor-pointer flex flex-col h-full",
+        allInCart ? "border-primary/50" : "border-border",
+      )}
+    >
+      <span className="promo-badge absolute top-3 right-3 z-10">
+        −{bundle.discountPercent}%
+      </span>
+
+      {allInCart && (
+        <span className="absolute top-3 left-3 z-10 flex items-center gap-1 bg-primary text-primary-foreground text-xs font-semibold px-2 py-0.5 rounded-full">
+          <ShoppingCart className="h-3 w-3" />
+          В корзине
+        </span>
+      )}
+
+      <div className="absolute bottom-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity bg-foreground/80 text-background text-[10px] font-medium px-2 py-1 rounded-full flex items-center gap-1 pointer-events-none">
+        <Info className="h-3 w-3" />
+        подробнее
+      </div>
+
+      <div className="flex items-center justify-center gap-2 h-32 mb-4 rounded-xl bg-muted/50 p-2 group-hover:scale-[1.02] transition-transform duration-300">
+        {items.slice(0, 5).map(p => (
+          <span key={p.id} className="text-3xl" title={p.name}>{p.image}</span>
+        ))}
+      </div>
+
+      <div className="space-y-1 flex-1">
+        <p className="text-xs text-muted-foreground inline-flex items-center gap-1">
+          <Package className="h-3 w-3" />
+          Комплект · {items.length} товаров
+        </p>
+        <h3 className="font-semibold text-foreground text-sm leading-tight">{bundle.title}</h3>
+        <p className="text-xs text-muted-foreground line-clamp-2">{bundle.subtitle}</p>
+
+        <ul className="mt-2 space-y-0.5">
+          {items.slice(0, 3).map(p => (
+            <li key={p.id} className="text-xs text-foreground/70 flex items-center gap-1.5">
+              <Check className="h-3 w-3 text-primary flex-shrink-0" />
+              <span className="truncate">{p.name}</span>
+            </li>
+          ))}
+          {items.length > 3 && (
+            <li className="text-xs text-muted-foreground pl-4">+ ещё {items.length - 3}</li>
+          )}
+        </ul>
+      </div>
+
+      <div className="flex items-end justify-between pt-3 mt-3 border-t border-border">
+        <div>
+          <span className="text-lg font-bold text-foreground">{bundlePrice} ₽</span>
+          <span className="ml-2 text-sm text-muted-foreground line-through">{originalTotal} ₽</span>
+          <p className="text-xs text-primary font-medium mt-0.5">Экономия {savings} ₽</p>
+        </div>
+        <Button
+          size="sm"
+          onClick={handleAdd}
+          variant={justAdded || allInCart ? "secondary" : "default"}
+          className="h-9"
+        >
+          {justAdded ? (
+            <><Check className="h-4 w-4 mr-1" />Добавлено</>
+          ) : allInCart ? (
+            <><Check className="h-4 w-4 mr-1" />В корзине</>
+          ) : (
+            <><ShoppingCart className="h-4 w-4 mr-1" />В корзину</>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const BundleCard = ({ variant = "vivid", ...rest }: Props) =>
+  variant === "plain" ? <PlainBundleCard {...rest} /> : <VividBundleCard {...rest} />;
 
 export default BundleCard;

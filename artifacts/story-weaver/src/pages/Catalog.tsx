@@ -121,10 +121,10 @@ const Catalog = () => {
           <button
             onClick={() => setCategory(BUNDLES_KEY)}
             className={cn(
-              "px-4 py-2 rounded-full text-sm font-semibold transition-all border inline-flex items-center gap-1.5",
+              "px-4 py-2 rounded-full text-sm font-medium transition-colors border inline-flex items-center gap-1.5",
               category === BUNDLES_KEY
-                ? "bg-gradient-to-r from-orange-500 to-rose-500 text-white border-transparent shadow-md"
-                : "bg-gradient-to-r from-orange-50 to-rose-50 text-rose-600 border-rose-200 hover:border-rose-400",
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-card text-muted-foreground border-border hover:border-primary hover:text-foreground",
             )}
           >
             <Package className="h-4 w-4" />
@@ -153,6 +153,7 @@ const Catalog = () => {
                 <BundleCard
                   key={b.id}
                   bundle={b}
+                  variant="plain"
                   onOpen={() => setOpenBundle(b)}
                   onAdd={handleAddBundle}
                 />

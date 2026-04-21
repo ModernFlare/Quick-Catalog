@@ -1,10 +1,10 @@
 /**
- * Лаб. раб. №6: Like/Dislike система с realtime-обновлением (JSON, без перезагрузки)
- * Данные передаются в формате JSON через Supabase Realtime (WebSocket + JSON payload)
+ * Локальный like/dislike — хранится в localStorage, обновляется без перезагрузки.
+ * Каждый товар имеет начальный seed (на основе исходного рейтинга), который
+ * затем меняется реакциями пользователей этой сессии/устройства.
  */
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
+import { products } from "@/lib/store";
 
 export interface ReactionCounts {
   likes: number;
@@ -12,87 +12,116 @@ export interface ReactionCounts {
   userReaction: "like" | "dislike" | null;
 }
 
+interface ReactionState {
+  likes: number;
+  dislikes: number;
+}
+
+const STORAGE_KEY = "fm_reactions_v1";
+const USER_KEY = "fm_user_reactions_v1";
+
+const counts = new Map<number, ReactionState>();
+const userReactions = new Map<number, "like" | "dislike">();
+let listeners: Array<() => void> = [];
+
+function seedFromRating(rating: number): ReactionState {
+  // rating 0..5 -> распределяем 100 реакций пропорционально
+  const total = 100;
+  const likeRatio = Math.max(0, Math.min(1, (rating - 1) / 4));
+  const likes = Math.round(total * likeRatio);
+  return { likes, dislikes: total - likes };
+}
+
+function load() {
+  if (counts.size > 0) return;
+  let stored: Record<string, ReactionState> = {};
+  let user: Record<string, "like" | "dislike"> = {};
+  try {
+    stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+    user = JSON.parse(localStorage.getItem(USER_KEY) || "{}");
+  } catch {}
+
+  for (const p of products) {
+    counts.set(p.id, stored[p.id] ?? seedFromRating(p.rating ?? 4.5));
+  }
+  for (const [k, v] of Object.entries(user)) {
+    userReactions.set(Number(k), v);
+  }
+}
+
+function persist() {
+  const obj: Record<number, ReactionState> = {};
+  counts.forEach((v, k) => { obj[k] = v; });
+  const userObj: Record<number, "like" | "dislike"> = {};
+  userReactions.forEach((v, k) => { userObj[k] = v; });
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
+    localStorage.setItem(USER_KEY, JSON.stringify(userObj));
+  } catch {}
+}
+
+function notify() {
+  listeners.forEach(l => l());
+}
+
+export function getRating(productId: number): number {
+  load();
+  const c = counts.get(productId);
+  if (!c) return 0;
+  const total = c.likes + c.dislikes;
+  if (total === 0) return 0;
+  return (c.likes / total) * 5;
+}
+
+export function getReactionCounts(productId: number): ReactionState {
+  load();
+  return counts.get(productId) ?? { likes: 0, dislikes: 0 };
+}
+
 export function useReactions(productId: number) {
-  const { user } = useAuth();
-  const [counts, setCounts] = useState<ReactionCounts>({ likes: 0, dislikes: 0, userReaction: null });
-  const [loading, setLoading] = useState(false);
-
-  const fetchCounts = useCallback(async () => {
-    // Получаем все реакции для данного товара (JSON-ответ от API)
-    const { data } = await supabase
-      .from("product_reactions")
-      .select("user_id, reaction")
-      .eq("product_id", productId);
-
-    if (data) {
-      const likes = data.filter(r => r.reaction === "like").length;
-      const dislikes = data.filter(r => r.reaction === "dislike").length;
-      const userReaction = user ? (data.find(r => r.user_id === user.id)?.reaction as "like" | "dislike" | null) ?? null : null;
-      setCounts({ likes, dislikes, userReaction });
-    }
-  }, [productId, user]);
+  load();
+  const [, force] = useState(0);
 
   useEffect(() => {
-    fetchCounts();
-  }, [fetchCounts]);
+    const l = () => force(n => n + 1);
+    listeners.push(l);
+    return () => { listeners = listeners.filter(x => x !== l); };
+  }, []);
 
-  // Лаб. раб. №6: Realtime — содержимое обновляется у других пользователей без перезагрузки
-  useEffect(() => {
-    const channel = supabase
-      .channel(`reactions-${productId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "product_reactions",
-          filter: `product_id=eq.${productId}`,
-        },
-        () => {
-          fetchCounts();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [productId, fetchCounts]);
+  const c = counts.get(productId) ?? { likes: 0, dislikes: 0 };
+  const userReaction = userReactions.get(productId) ?? null;
 
   const react = useCallback(
-    async (type: "like" | "dislike") => {
-      if (!user || loading) return;
-      setLoading(true);
+    (type: "like" | "dislike") => {
+      const cur = counts.get(productId) ?? { likes: 0, dislikes: 0 };
+      const prev = userReactions.get(productId) ?? null;
+      const next = { ...cur };
 
-      try {
-        if (counts.userReaction === type) {
-          // Убираем реакцию
-          await supabase
-            .from("product_reactions")
-            .delete()
-            .eq("user_id", user.id)
-            .eq("product_id", productId);
-        } else if (counts.userReaction) {
-          // Меняем реакцию
-          await supabase
-            .from("product_reactions")
-            .update({ reaction: type })
-            .eq("user_id", user.id)
-            .eq("product_id", productId);
-        } else {
-          // Новая реакция (JSON-тело запроса)
-          await supabase
-            .from("product_reactions")
-            .insert({ user_id: user.id, product_id: productId, reaction: type });
+      if (prev === type) {
+        // снять реакцию
+        next[`${type}s` as "likes" | "dislikes"] = Math.max(0, next[`${type}s` as "likes" | "dislikes"] - 1);
+        userReactions.delete(productId);
+      } else {
+        if (prev) {
+          next[`${prev}s` as "likes" | "dislikes"] = Math.max(0, next[`${prev}s` as "likes" | "dislikes"] - 1);
         }
-      } catch (e) {
-        console.error("Reaction error:", e);
+        next[`${type}s` as "likes" | "dislikes"] += 1;
+        userReactions.set(productId, type);
       }
 
-      setLoading(false);
+      counts.set(productId, next);
+      persist();
+      notify();
     },
-    [user, loading, counts.userReaction, productId]
+    [productId],
   );
 
-  return { ...counts, react, loading };
+  return {
+    likes: c.likes,
+    dislikes: c.dislikes,
+    userReaction,
+    react,
+    loading: false,
+    rating: getRating(productId),
+  };
 }

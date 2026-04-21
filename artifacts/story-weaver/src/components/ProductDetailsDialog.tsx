@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { type Product, useCart } from "@/lib/store";
+import { useReactions } from "@/hooks/use-reactions";
 
 interface ProductDetailsDialogProps {
   product: Product | null;
@@ -17,6 +18,7 @@ interface ProductDetailsDialogProps {
 
 const ProductDetailsDialog = ({ product, open, onOpenChange }: ProductDetailsDialogProps) => {
   const { items, addToCart, updateQuantity, removeFromCart } = useCart();
+  const { rating, likes, dislikes } = useReactions(product?.id ?? -1);
 
   if (!product) return null;
 
@@ -58,8 +60,11 @@ const ProductDetailsDialog = ({ product, open, onOpenChange }: ProductDetailsDia
             <div className="space-y-2">
               <div className="flex items-center gap-3 text-sm">
                 <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-                <span className="font-semibold">{product.rating}</span>
+                <span className="font-semibold">{rating.toFixed(1)}</span>
                 <span className="text-muted-foreground">/ 5</span>
+                <span className="text-xs text-muted-foreground">
+                  · {likes} 👍 / {dislikes} 👎
+                </span>
               </div>
               <div className="flex items-start gap-3 text-sm">
                 <Scale className="h-4 w-4 text-primary mt-0.5" />
