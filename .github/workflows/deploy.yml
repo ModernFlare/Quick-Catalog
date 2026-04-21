@@ -27,11 +27,12 @@ jobs:
       - name: 🛠️ Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: 🏗️ Build project
+     - name: 🏗️ Build project
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_DADATA_TOKEN: ${{ secrets.VITE_DADATA_TOKEN }}
+          PORT: 3000  # <--- Добавь вот эту строчку
         run: pnpm run build
 
       - name: 🚀 Deploy to Debian 11
