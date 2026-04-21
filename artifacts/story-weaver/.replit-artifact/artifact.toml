@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Story Weaver"
+version = "1.0.0"
+id = "artifacts/story-weaver"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21276
+
+[services.development]
+run = "pnpm --filter @workspace/story-weaver run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/story-weaver", "run", "build" ]
+publicDir = "artifacts/story-weaver/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21276"
+BASE_PATH = "/"
